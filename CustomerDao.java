@@ -19,6 +19,7 @@ public class CustomerDao {
 	 * @return ArrayList<Customer> object
 	 */
 	public List<Customer> getCustomers(String searchKeyword) {
+		System.out.println("Inside Get Customers");
 		/*
 		 * This method fetches one or more customers based on the searchKeyword and returns it as an ArrayList
 		 */
@@ -29,16 +30,16 @@ public class CustomerDao {
 		 * The students code to fetch data from the database based on searchKeyword will be written here
 		 * Each record is required to be encapsulated as a "Customer" class object and added to the "customers" List
 		 */
-		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			Connection connect = DriverManager.getConnection("jdbc:mysql://localhost:1433/paj_auction_house");
-			Statement state = connect.createStatement();
-			ResultSet rs = state.executeQuery(searchKeyword);
-			// rs is a row in the DataBase with all the info. create customer object and store into customers array
-		}
-		catch(Exception e) {
-			System.out.print(e);
-		}
+//		try {
+//			Class.forName("com.mysql.jdbc.Driver");
+//			Connection connect = DriverManager.getConnection("jdbc:mysql://localhost:1433/paj_auction_house");
+//			Statement state = connect.createStatement();
+//			ResultSet rs = state.executeQuery(searchKeyword);
+//			// rs is a row in the DataBase with all the info. create customer object and store into customers array
+//		}
+//		catch(Exception e) {
+//			System.out.print(e);
+//		}
 		/*Sample data begins*/
 		for (int i = 0; i < 10; i++) {
 			Customer customer = new Customer();

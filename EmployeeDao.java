@@ -67,6 +67,7 @@ public class EmployeeDao {
 	}
 
 	public String editEmployee(Employee employee) {
+		System.out.println("inside edit Emploee Method");
 		/*
 		 * All the values of the edit employee form are encapsulated in the employee object.
 		 * These can be accessed by getter methods (see Employee class in model package).
@@ -74,11 +75,36 @@ public class EmployeeDao {
 		 * The sample code returns "success" by default.
 		 * You need to handle the database update and return "success" or "failure" based on result of the database update.
 		 */
-		
-		/*Sample data begins*/
-		return "success";
-		/*Sample data ends*/
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+			String user = "root";
+			String pass = "Alanyi44";
+			Connection connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/paj_auction_house",user, pass);
+			System.out.print("connected!");
+			Statement st = connect.createStatement();
+			String employeeQ = buildQueryEditEmployee(employee);
+			String personQ = buildQueryEditPerson(employee);
+			st.executeUpdate(employeeQ);
+			st.executeUpdate(personQ);
 
+		}
+		catch(Exception e) {
+			System.out.println("the error is: ");
+			System.out.println(e);
+		}
+		return "success";
+	}
+	
+	public static String buildQueryEditEmployee(Employee employee) {
+		String query = String.format("Update employee SET StartDate = '%s', HourlyRate = '%s', Position = '%s' Where EmployeeID =  %s ;",employee.getStartDate(), employee.getHourlyRate(), employee.getLevel(), employee.getEmployeeID());
+		System.out.println("THE QUERY IS " + query);
+		return query;
+	}
+	
+	public static String buildQueryEditPerson(Employee employee) {
+		String query = String.format("Update person SET LastName = '%s', FirstName = '%s', Address = '%s', City = '%s', State = '%s', ZipCode = '%s', Email = '%s', Telephone = '%s' Where PersonID =  %s ;",employee.getLastName(),employee.getFirstName(),employee.getAddress(),employee.getCity(),employee.getState(),employee.getZipCode(),employee.getEmail(),employee.getTelephone(),employee.getEmployeeID());
+		System.out.println("THE QUERY IS " + query);
+		return query;
 	}
 
 	public String deleteEmployee(String employeeID) {
@@ -87,11 +113,32 @@ public class EmployeeDao {
 		 * The sample code returns "success" by default.
 		 * You need to handle the database deletion and return "success" or "failure" based on result of the database deletion.
 		 */
-		
-		/*Sample data begins*/
-		return "success";
-		/*Sample data ends*/
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+			String user = "root";
+			String pass = "Alanyi44";
+			Connection connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/paj_auction_house",user, pass);
+			System.out.print("connected!");
+			Statement st = connect.createStatement();
+			String employeeQ = buildQueryDeleteEmployee(employeeID);
 
+			st.executeUpdate(employeeQ);
+
+
+		}
+		catch(Exception e) {
+			System.out.println("the error is: ");
+			System.out.println(e);
+			return "failure"; 
+		}
+		return "success";
+
+	}
+	
+	public static String buildQueryDeleteEmployee(String employeeID) {
+		String query = String.format("DELETE FROM employee WHERE EmployeeID = %s", employeeID);
+		System.out.println("THE QUERY IS " + query);
+		return query;
 	}
 
 	
@@ -102,25 +149,6 @@ public class EmployeeDao {
 		 * Query to return details about all the employees must be implemented
 		 * Each record is required to be encapsulated as a "Employee" class object and added to the "employees" List
 		 */
-		/*Sample data begins*/
-//		for (int i = 0; i < 10; i++) {
-//			Employee employee = new Employee();
-//			employee.setEmail("shiyong@cs.sunysb.edu");
-//			employee.setFirstName("Shiyong");
-//			employee.setLastName("Lu");
-//			employee.setAddress("123 Success Street");
-//			employee.setCity("Stony Brook");
-//			employee.setStartDate("2006-10-17");
-//			employee.setState("NY");
-//			employee.setZipCode(11790);
-//			employee.setTelephone("5166328959");
-//			employee.setEmployeeID("631-413-5555");
-//			employee.setHourlyRate(100);
-//			employees.add(employee);
-//		}
-		/*Sample data ends*/
-		
-//		return employees;
 
 		List<Employee> employees = new ArrayList<Employee>();
 		
@@ -132,30 +160,26 @@ public class EmployeeDao {
 			System.out.print("connected!");
 			Statement st = connect.createStatement();
 			String employeeQuery = buildQueryGetEmployees();
-			String personQuery = buildQueryGetPerson();
 			ResultSet rsE = st.executeQuery(employeeQuery);
-//			ResultSet rsP = st.executeQuery(personQuery);
-			
 			storeEmployees(employees,rsE,connect);
-			
-
 		}
 		catch(Exception e) {
 			System.out.println("the error is: ");
 			System.out.println(e);
 		}
 		return employees;
-		
-		
 	}
+	
 	public static String buildQueryGetEmployees() {
 		String query = String.format("SELECT * FROM employee;");
 		return query;
 	}
+	
 	public static String buildQueryGetPerson() {
 		String query = String.format("SELECT * FROM person;");
 		return query;
 	}
+	
 	public static List<Employee> storeEmployees(List<Employee> employees, ResultSet rsE,Connection connect){
 		System.out.println("inside store Employees");
 		try {
@@ -169,7 +193,7 @@ public class EmployeeDao {
 				Statement st = connect.createStatement();
 				ResultSet rsP = st.executeQuery(employeeP);
 				rsP.next();
-				employee.setEmployeeID(rsP.getString(1));
+				employee.setEmployeeID(rsP.getString("PersonID"));
 				employee.setEmail(rsP.getString("Email"));
 				employee.setFirstName(rsP.getString("FirstName"));
 				employee.setLastName(rsP.getString("LastName"));
@@ -190,6 +214,7 @@ public class EmployeeDao {
 		return null;
 		
 	}
+	
 	public Employee getEmployee(String employeeID) {
 
 		/*
@@ -197,22 +222,61 @@ public class EmployeeDao {
 		 * employeeID, which is the Employee's ID who's details have to be fetched, is given as method parameter
 		 * The record is required to be encapsulated as a "Employee" class object
 		 */
-
+//		
+//		String employeeP = String.format("SELECT * FROM paj_auction_house.person WHERE PersonID = %s", employeeID);
+		System.out.println("INSIDE GET EMPLOYEE METHOD");
 		Employee employee = new Employee();
-		
-		/*Sample data begins*/
-		employee.setEmail("shiyong@cs.sunysb.edu");
-		employee.setFirstName("Shiyong");
-		employee.setLastName("Lu");
-		employee.setAddress("123 Success Street");
-		employee.setCity("Stony Brook");
-		employee.setStartDate("2006-10-17");
-		employee.setState("NY");
-		employee.setZipCode(11790);
-		employee.setTelephone("5166328959");
-		employee.setEmployeeID("631-413-5555");
-		employee.setHourlyRate(100);
-		/*Sample data ends*/
+	
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+			String user = "root";
+			String pass = "Alanyi44";
+			Connection connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/paj_auction_house",user, pass);
+			System.out.print("connected!");
+			Statement st = connect.createStatement();
+			String employeeQuery = buildQueryGetEmployee(employeeID);
+//			String personQuery = buildQueryGetPerson();
+			ResultSet rsE = st.executeQuery(employeeQuery);
+			System.out.println("After execute Query");
+			employee = fetchEmployee(employee, rsE, connect);
+
+		}
+		catch(Exception e) {
+			System.out.println("the error is: ");
+			System.out.println(e);
+		}
+		return employee;
+	}
+	
+	public static String buildQueryGetEmployee(String employeeID) {
+		String query = String.format("SELECT * FROM employee WHERE EmployeeID = %s;", employeeID);
+		System.out.println("THE QUERY IS " + query);
+		return query;
+	}
+	
+	public static Employee fetchEmployee(Employee employee, ResultSet rsE, Connection connect) {
+		System.out.println("inside fetch Employee");
+		try {
+			rsE.next();
+			String employeeP = String.format("SELECT * FROM person WHERE PersonID = %s", rsE.getString("EmployeeID"));
+			Statement st = connect.createStatement();
+			ResultSet rsP = st.executeQuery(employeeP);
+			rsP.next();
+			employee.setEmployeeID(rsP.getString("PersonID"));
+			employee.setEmail(rsP.getString("Email"));
+			employee.setFirstName(rsP.getString("FirstName"));
+			employee.setLastName(rsP.getString("LastName"));
+			employee.setAddress(rsP.getString("Address"));
+			employee.setCity(rsP.getString("City"));
+			employee.setState(rsP.getString("State"));
+			employee.setZipCode(Integer.parseInt(rsP.getString("ZipCode")));
+			employee.setTelephone(rsP.getString("Telephone"));
+			employee.setStartDate(rsE.getString("StartDate"));
+			employee.setHourlyRate(Float.parseFloat(rsE.getString("HourlyRate")));
+		}
+		catch(Exception e) {
+			System.out.println(e);
+		}
 		
 		return employee;
 	}
@@ -233,17 +297,62 @@ public class EmployeeDao {
 		employee.setEmployeeID("631-413-5555");
 		/*Sample data ends*/
 		
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+			String user = "root";
+			String pass = "Alanyi44";
+			Connection connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/paj_auction_house",user, pass);
+			System.out.print("connected!");
+			Statement st = connect.createStatement();
+			String employeeQuery = highestRevenueEmployeeQuery();
+//			ResultSet rsE = st.executeQuery(employeeQuery);
+//			storeEmployees(employees,rsE,connect);
+		}
+		catch(Exception e) {
+			System.out.println("the error is: ");
+			System.out.println(e);
+		}
+		
 		return employee;
+	}
+	
+	public static String highestRevenueEmployeeQuery() {
+//		String query = String.format(null, null)
+		return null;
 	}
 
 	public String getEmployeeID(String username) {
+		System.out.println("Inside getEmployeeID MEthod");
 		/*
 		 * The students code to fetch data from the database based on "username" will be written here
 		 * username, which is the Employee's email address who's Employee ID has to be fetched, is given as method parameter
 		 * The Employee ID is required to be returned as a String
 		 */
+		try {
+				Class.forName("com.mysql.jdbc.Driver");
+				String user = "root";
+				String pass = "Alanyi44";
+				Connection connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/paj_auction_house",user, pass);
+				System.out.print("connected!");
+				Statement st = connect.createStatement();
+				String employeeQ = buildQueryGetEmployeeID(username);
+				ResultSet rsE = st.executeQuery(employeeQ);
+				rsE.next();
+				return rsE.getString("EmployeeID");
 
-		return "111-11-1111";
+			}
+			catch(Exception e) {
+				System.out.println("the error is: ");
+				System.out.println(e);
+			}
+		return null;
+
 	}
-
+	public static String buildQueryGetEmployeeID(String username) {
+		String query = String.format("SELECT employeeID FROM employee\r\n"
+				+ "INNER JOIN person\r\n"
+				+ "ON EmployeeID = PersonID \r\n"
+				+ "WHERE person.Email = \"%s\"", username);
+		return query;
+	}
 }
