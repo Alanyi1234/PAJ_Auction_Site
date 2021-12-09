@@ -1,108 +1,253 @@
 package dao;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
 import model.Auction;
 import model.Bid;
-import model.Employee;
 import model.Item;
 
 public class ItemDao {
 
-	
 	public List<Item> getItems() {
-		
-		/*
-		 * The students code to fetch data from the database will be written here
-		 * Query to fetch details of all the items has to be implemented
-		 * Each record is required to be encapsulated as a "Item" class object and added to the "items" List
-		 */
 
+		/*
+		 * The students code to fetch data from the database will be written here Query
+		 * to fetch details of all the items has to be implemented Each record is
+		 * required to be encapsulated as a "Item" class object and added to the "items"
+		 * List
+		 */
 		List<Item> items = new ArrayList<Item>();
-				
-		/*Sample data begins*/
-		for (int i = 0; i < 10; i++) {
-			Item item = new Item();
-			item.setItemID(123);
-			item.setDescription("sample description");
-			item.setType("BOOK");
-			item.setName("Sample Book");
-			item.setNumCopies(2);
-			items.add(item);
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+			String user = "root";
+			String pass = "Alanyi44";
+			Connection connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/paj_auction_house", user,
+					pass);
+			System.out.print("connected!");
+			Statement st = connect.createStatement();
+			String employeeQuery = buildQueryGetItems();
+			ResultSet rsE = st.executeQuery(employeeQuery);
+			return storeItems(items, rsE, connect);
+
+		} catch (Exception e) {
+			System.out.println("unable to connect, the error is: ");
+			System.out.println(e);
 		}
-		/*Sample data ends*/
-		
+
 		return items;
 
+	}
+
+	public static String buildQueryGetItems() {
+		String query = String.format("SELECT * FROM item");
+		return query;
+	}
+
+	public static List<Item> storeItems(List<Item> items, ResultSet rsE, Connection connect) {
+
+		try {
+			while (rsE.next()) {
+				Item item = new Item();
+				item.setItemID(Integer.parseInt(rsE.getString("ItemID")));
+				item.setDescription(rsE.getString("Description"));
+				item.setType(rsE.getString("Type"));
+				item.setName(rsE.getString("Name"));
+				item.setNumCopies(Integer.parseInt(rsE.getString("NumCopies")));
+				items.add(item);
+			}
+			return items;
+		} catch (Exception e) {
+			System.out.println(e);
+		}
+		return null;
+	}
+
+	public List<Item> getBestsellerItems() {
+		System.out.println("Get Best Seller Items Method");
+
+		List<Item> items = new ArrayList<Item>();
+
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+			String user = "root";
+			String pass = "Alanyi44";
+			Connection connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/paj_auction_house", user,
+					pass);
+			System.out.print("connected!");
+			Statement st = connect.createStatement();
+			String employeeQuery = buildQueryGetBestsellerItems();
+			st.executeUpdate(employeeQuery);
+			String getItem = getItemFromView();
+			ResultSet itemIDs = st.executeQuery(getItem);
+
+//			String getItems = "";
+//			ResultSet rsI =st.executeQuery(getItems);
+			items = storeItemFromID(items, itemIDs, connect);
+			String drop = deleteSoldView();
+			st.executeUpdate(drop);
+			return items;
+		} catch (Exception e) {
+			System.out.println("Get Best Seller Items Method the error is: ");
+			System.out.println(e);
+		}
+		return items;
+	}
+
+	public static String buildQueryGetBestsellerItems() {
+		String query = "CREATE VIEW Sold (CustomerID, AuctionID, SoldPrice)\r\n" + "AS\r\n"
+				+ "SELECT B1.CustomerID, B1.AuctionID, B1.BidPrice AS SoldPrice\r\n" + "FROM Bid B1\r\n"
+				+ "WHERE B1.BidPrice >=\r\n"
+				+ "ALL (SELECT B2.BidPrice FROM Bid B2 WHERE B1.AuctionID = B2.AuctionID);";
+		return query;
+	}
+
+	public static String getItemFromView() {
+		System.out.println("INSIDE getItemFromView()");
+		String query = "SELECT I.ItemID, Count(I.ItemID) AS CountItem\r\n" + "FROM Sold S, Auction A, Item I\r\n"
+				+ "WHERE S.AuctionID = A.AuctionID AND A.ItemID = I.ItemID\r\n" + "GROUP BY I.ItemID\r\n"
+				+ "ORDER BY CountItem";
+		return query;
+	}
+
+	public static String deleteSoldView() {
+		return "DROP VIEW sold";
+	}
+
+	public static List<Item> storeItemFromID(List<Item> items, ResultSet itemIDs, Connection connect) {
+		System.out.println("Store Item FROM ID method");
+
+		try {
+			while (itemIDs.next()) {
+				Statement st = connect.createStatement();
+				String getItem = String.format("SELECT * FROM item WHERE ItemId = %s ", itemIDs.getString("ItemID"));
+				ResultSet rsE = st.executeQuery(getItem);
+				rsE.next();
+				Item item = new Item();
+				item.setItemID(Integer.parseInt(rsE.getString("ItemID")));
+				item.setDescription(rsE.getString("Description"));
+				item.setType(rsE.getString("Type"));
+				item.setName(rsE.getString("Name"));
+				item.setNumCopies(Integer.parseInt(rsE.getString("NumCopies")));
+				items.add(item);
+			}
+			return items;
+		} catch (Exception e) {
+			System.out.println("Store Item FROM ID method" + e);
+		}
+		return null;
+	}
+
+	public List<Item> getSummaryListing(String searchKeyword) { // TODO
+		System.out.println("inside get summary listing");
+		/*
+		 * The students code to fetch data from the database will be written here Query
+		 * to fetch details of summary listing of revenue generated by a particular item
+		 * or item type must be implemented Each record is required to be encapsulated
+		 * as a "Item" class object and added to the "items" ArrayList Store the revenue
+		 * generated by an item in the soldPrice attribute, using setSoldPrice method of
+		 * each "item" object
+		 */
+
+//		List<Item> items = new ArrayList<Item>();
+//
+//		/* Sample data begins */
+//		for (int i = 0; i < 6; i++) {
+//			Item item = new Item();
+//			item.setItemID(123);
+//			item.setDescription("sample description");
+//			item.setType("BOOK");
+//			item.setName("Sample Book");
+//			item.setSoldPrice(150);
+//			items.add(item);
+//		}
+		/* Sample data ends */
+		List<Item> items = new ArrayList<Item>();
+
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+			String user = "root";
+			String pass = "Alanyi44";
+			Connection connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/paj_auction_house", user,
+					pass);
+			System.out.print("connected!");
+			Statement st = connect.createStatement();
+
+			String employeeQuery = buildQueryGetBestsellerItems();
+			st.executeUpdate(employeeQuery);
+			
+			String getItem = getItemFromViewWithName(searchKeyword);
+			ResultSet itemIDs = st.executeQuery(getItem);
+			storeItemFromID(items, itemIDs, connect);
+			
+			String difgetItem = getItemFromViewWithType(searchKeyword);
+			ResultSet difitemIDs = st.executeQuery(difgetItem);
+			storeItemFromID(items, difitemIDs, connect);
+			
+
+			String dif1getItem = getItemFromViewWithCustomerName(searchKeyword);
+			ResultSet dif1itemIDs = st.executeQuery(dif1getItem);
+			storeItemFromID(items, dif1itemIDs, connect);
+			
+			String drop = deleteSoldView();
+			st.executeUpdate(drop);
+			return items;
+
+		} catch (Exception e) {
+			System.out.println("inside get summary listing, the error is: ");
+			System.out.println(e);
+		}
+		return null;
+	}
+
+	public static String getItemFromViewWithName(String searchKeyword) {
+		System.out.println("INSIDE getItemFromViewWithName()");
+		String query = "SELECT I.ItemID, SUM(S.SoldPrice) FROM Sold S, Auction A, Item I WHERE I.Name = '" + searchKeyword + "' AND S.AuctionID = A.AuctionID AND I.ItemID = A.ItemID;";
+		System.out.println(query);
+//		 LIKE \'%" + type + "%\'
+		return query;
 	}
 	
-	public List<Item> getBestsellerItems() {
+	public static String getItemFromViewWithType(String searchKeyword) {
+		System.out.println("INSIDE etItemFromViewWithType ()");
+		String query = "SELECT I.ItemID, SUM(S.SoldPrice) FROM Sold S, Auction A, Item I WHERE I.Type = '" + searchKeyword + "' AND S.AuctionID = A.AuctionID AND I.ItemID = A.ItemID;";
+		System.out.println(query);
+//		 LIKE \'%" + type + "%\'
+		return query;
+	}
+	
+	public static String getItemFromViewWithCustomerName(String searchKeyword) {
+		System.out.println("INSIDE etItemFromViewWithType ()");
 		
-		/*
-		 * The students code to fetch data from the database will be written here
-		 * Query to fetch details of the bestseller items has to be implemented
-		 * Each record is required to be encapsulated as a "Item" class object and added to the "items" List
-		 */
-
-		List<Item> items = new ArrayList<Item>();
+		String query = "SELECT I.ItemID, SUM(S.SoldPrice)\r\n"
+		+ "FROM Sold S, Customer C, Post P, Person P2, Item I\r\n"
+		+ "WHERE P2.FirstName = '" + searchKeyword+ "' AND C.CustomerID = P.CustomerID AND\r\n"
+		+ "P.AuctionID = S.AuctionID AND P2.PersonID = C.CustomerID";
 		
-		
-		/*Sample data begins*/
-		for (int i = 0; i < 5; i++) {
-			Item item = new Item();
-			item.setItemID(123);
-			item.setDescription("sample description");
-			item.setType("BOOK");
-			item.setName("Sample Book");
-			item.setNumCopies(2);
-			items.add(item);
-		}
-		/*Sample data ends*/
-		
-		return items;
-
+//		String query = "SELECT I.ItemID, SUM(S.SoldPrice) FROM Sold S, Auction A, Item I WHERE I.Type = '" + searchKeyword + "' AND S.AuctionID = A.AuctionID AND I.ItemID = A.ItemID;";
+		System.out.println(query);
+//		 LIKE \'%" + type + "%\'
+		return query;
 	}
 
-	public List<Item> getSummaryListing(String searchKeyword) {
-		
+	public List<Item> getItemSuggestions(String customerID) { // TODO
+
 		/*
-		 * The students code to fetch data from the database will be written here
-		 * Query to fetch details of summary listing of revenue generated by a particular item or item type must be implemented
-		 * Each record is required to be encapsulated as a "Item" class object and added to the "items" ArrayList
-		 * Store the revenue generated by an item in the soldPrice attribute, using setSoldPrice method of each "item" object
+		 * The students code to fetch data from the database will be written here Query
+		 * to fetch item suggestions for a customer, indicated by customerID, must be
+		 * implemented customerID, which is the Customer's ID for whom the item
+		 * suggestions are fetched, is given as method parameter Each record is required
+		 * to be encapsulated as a "Item" class object and added to the "items"
+		 * ArrayList
 		 */
 
 		List<Item> items = new ArrayList<Item>();
-				
-		/*Sample data begins*/
-		for (int i = 0; i < 6; i++) {
-			Item item = new Item();
-			item.setItemID(123);
-			item.setDescription("sample description");
-			item.setType("BOOK");
-			item.setName("Sample Book");
-			item.setSoldPrice(150);
-			items.add(item);
-		}
-		/*Sample data ends*/
-		
-		return items;
 
-	}
-
-	public List<Item> getItemSuggestions(String customerID) {
-		
-		/*
-		 * The students code to fetch data from the database will be written here
-		 * Query to fetch item suggestions for a customer, indicated by customerID, must be implemented
-		 * customerID, which is the Customer's ID for whom the item suggestions are fetched, is given as method parameter
-		 * Each record is required to be encapsulated as a "Item" class object and added to the "items" ArrayList
-		 */
-
-		List<Item> items = new ArrayList<Item>();
-		
-		/*Sample data begins*/
+		/* Sample data begins */
 		for (int i = 0; i < 4; i++) {
 			Item item = new Item();
 			item.setItemID(123);
@@ -112,33 +257,35 @@ public class ItemDao {
 			item.setNumCopies(2);
 			items.add(item);
 		}
-		/*Sample data ends*/
-		
+		/* Sample data ends */
+
 		return items;
 
 	}
 
-	public List getItemsBySeller(String sellerID) {
-		
+	public List getItemsBySeller(String sellerID) { // TODO
+
 		/*
-		 * The students code to fetch data from the database will be written here
-		 * Query to fetch items sold by a given seller, indicated by sellerID, must be implemented
-		 * sellerID, which is the Sellers's ID who's items are fetched, is given as method parameter
-		 * The bid and auction details of each of the items should also be fetched
-		 * The bid details must have the highest current bid for the item
-		 * The auction details must have the details about the auction in which the item is sold
-		 * Each item record is required to be encapsulated as a "Item" class object and added to the "items" List
-		 * Each bid record is required to be encapsulated as a "Bid" class object and added to the "bids" List
-		 * Each auction record is required to be encapsulated as a "Auction" class object and added to the "auctions" List
-		 * The items, bids and auctions Lists have to be added to the "output" List and returned
+		 * The students code to fetch data from the database will be written here Query
+		 * to fetch items sold by a given seller, indicated by sellerID, must be
+		 * implemented sellerID, which is the Sellers's ID who's items are fetched, is
+		 * given as method parameter The bid and auction details of each of the items
+		 * should also be fetched The bid details must have the highest current bid for
+		 * the item The auction details must have the details about the auction in which
+		 * the item is sold Each item record is required to be encapsulated as a "Item"
+		 * class object and added to the "items" List Each bid record is required to be
+		 * encapsulated as a "Bid" class object and added to the "bids" List Each
+		 * auction record is required to be encapsulated as a "Auction" class object and
+		 * added to the "auctions" List The items, bids and auctions Lists have to be
+		 * added to the "output" List and returned
 		 */
 
 		List output = new ArrayList();
 		List<Item> items = new ArrayList<Item>();
 		List<Bid> bids = new ArrayList<Bid>();
 		List<Auction> auctions = new ArrayList<Auction>();
-		
-		/*Sample data begins*/
+
+		/* Sample data begins */
 		for (int i = 0; i < 4; i++) {
 			Item item = new Item();
 			item.setItemID(123);
@@ -146,137 +293,267 @@ public class ItemDao {
 			item.setType("BOOK");
 			item.setName("Sample Book");
 			items.add(item);
-			
+
 			Bid bid = new Bid();
 			bid.setCustomerID("123-12-1234");
 			bid.setBidPrice(120);
 			bids.add(bid);
-			
+
 			Auction auction = new Auction();
 			auction.setMinimumBid(100);
 			auction.setBidIncrement(10);
 			auction.setAuctionID(123);
 			auctions.add(auction);
 		}
-		/*Sample data ends*/
-		
+		/* Sample data ends */
+
 		output.add(items);
 		output.add(bids);
 		output.add(auctions);
-		
+
 		return output;
 	}
 
 	public List<Item> getItemTypes() {
-		
+		System.out.println("Get item types method");
 		/*
-		 * The students code to fetch data from the database will be written here
-		 * Each record is required to be encapsulated as a "Item" class object and added to the "items" ArrayList
-		 * A query to fetch the unique item types has to be implemented
-		 * Each item type is to be added to the "item" object using setType method
+		 * The students code to fetch data from the database will be written here Each
+		 * record is required to be encapsulated as a "Item" class object and added to
+		 * the "items" ArrayList A query to fetch the unique item types has to be
+		 * implemented Each item type is to be added to the "item" object using setType
+		 * method
 		 */
-		
+
 		List<Item> items = new ArrayList<Item>();
-		
-		/*Sample data begins*/
-		for (int i = 0; i < 6; i++) {
-			Item item = new Item();
-			item.setType("BOOK");
-			items.add(item);
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+			String user = "root";
+			String pass = "Alanyi44";
+			Connection connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/paj_auction_house", user,
+					pass);
+			System.out.print("connected!");
+			Statement st = connect.createStatement();
+			String employeeQuery = buldQueryDistinctItemType();
+			ResultSet rsE = st.executeQuery(employeeQuery);
+			return getItemTypes(items, rsE, connect);
+//			return getItemTypes(items,rsE,connect);
+
+		} catch (Exception e) {
+			System.out.println("unable to connect, the error is: ");
+			System.out.println(e);
 		}
-		/*Sample data ends*/
-		
-		return items;
+
+		return null;
+	}
+
+	public static String buldQueryDistinctItemType() {
+		String query = String.format("SELECT DISTINCT Type from item ");
+		return query;
+	}
+
+	public static List<Item> getItemTypes(List<Item> items, ResultSet rsE, Connection connect) {
+		System.out.println("getItemTypes METHOD");
+		try {
+			while (rsE.next()) {
+				Item item = new Item();
+				item.setType(rsE.getString("Type"));
+				items.add(item);
+			}
+			return items;
+		} catch (Exception e) {
+
+			System.out.println("getItemTypes" + e);
+		}
+
+		return null;
 	}
 
 	public List getItemsByName(String itemName) {
-		
+		System.out.println("Get items by Name method");
 		/*
-		 * The students code to fetch data from the database will be written here
-		 * The itemName, which is the item's name on which the query has to be implemented, is given as method parameter
-		 * Query to fetch items containing itemName in their name has to be implemented
-		 * Each item's corresponding auction data also has to be fetched
-		 * Each item record is required to be encapsulated as a "Item" class object and added to the "items" List
-		 * Each auction record is required to be encapsulated as a "Auction" class object and added to the "auctions" List
-		 * The items and auctions Lists are to be added to the "output" List and returned
+		 * The students code to fetch data from the database will be written here The
+		 * itemName, which is the item's name on which the query has to be implemented,
+		 * is given as method parameter Query to fetch items containing itemName in
+		 * their name has to be implemented Each item's corresponding auction data also
+		 * has to be fetched Each item record is required to be encapsulated as a "Item"
+		 * class object and added to the "items" List Each auction record is required to
+		 * be encapsulated as a "Auction" class object and added to the "auctions" List
+		 * The items and auctions Lists are to be added to the "output" List and
+		 * returned
 		 */
 
 		List output = new ArrayList();
 		List<Item> items = new ArrayList<Item>();
 		List<Auction> auctions = new ArrayList<Auction>();
-		
-		/*Sample data begins*/
-		for (int i = 0; i < 4; i++) {
-			Item item = new Item();
-			item.setItemID(123);
-			item.setDescription("sample description");
-			item.setType("BOOK");
-			item.setName("Sample Book");
-			items.add(item);
-			
-			Auction auction = new Auction();
-			auction.setMinimumBid(100);
-			auction.setBidIncrement(10);
-			auctions.add(auction);
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+			String user = "root";
+			String pass = "Alanyi44";
+			Connection connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/paj_auction_house", user,
+					pass);
+			System.out.print("connected!");
+			Statement st = connect.createStatement();
+			String employeeQuery = buildQueryGetItemsByName(itemName);
+			ResultSet rsE = st.executeQuery(employeeQuery);
+			return getItemOutput(items, auctions, rsE, connect, output);
+
+		} catch (Exception e) {
+			System.out.println("getItemsByName error is: ");
+			System.out.println(e);
 		}
-		/*Sample data ends*/
-		
-		output.add(items);
-		output.add(auctions);
-		
-		return output;
+
+		return null;
+	}
+
+	public static String buildQueryGetItemsByName(String name) {
+		System.out.println("Inside build query");
+//		String query = String.format("SELECT * FROM item WHERE Name LIKE '%" + name + "%' ");
+		String temp = "SELECT * FROM item WHERE Name LIKE \'%" + name + "%\' ";
+		System.out.println("The query iS : " + temp);
+		return temp;
+
+	}
+
+	public static List getItemOutput(List<Item> items, List<Auction> auctions, ResultSet rsE, Connection connect,
+			List output) {
+		System.out.println("Get item output");
+		try {
+			while (rsE.next()) {
+				Item item = new Item();
+				item.setItemID(Integer.parseInt(rsE.getString("ItemID")));
+				item.setDescription(rsE.getString("Description"));
+				item.setType(rsE.getString("Type"));
+				item.setName(rsE.getString("Name"));
+				items.add(item);
+
+				// Now get relevant ItemID in auction able
+
+				ResultSet rsA = runQueryAuctionWithItem(item);
+				rsA.next();
+				Auction auction = new Auction();
+				auction.setMinimumBid(Float.parseFloat(rsA.getString("MinimumBid")));
+				auction.setBidIncrement(Float.parseFloat(rsA.getString("BidIncrement")));
+				auctions.add(auction);
+
+			}
+			output.add(items);
+			output.add(auctions);
+			return output;
+		} catch (Exception e) {
+			System.out.println("getItemOutput" + e);
+		}
+
+		return null;
+	}
+
+	public static ResultSet runQueryAuctionWithItem(Item item) {
+		System.out.println("Run Query Action with Item ID");
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+			String user = "root";
+			String pass = "Alanyi44";
+			Connection connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/paj_auction_house", user,
+					pass);
+			System.out.print("connected!");
+			Statement st = connect.createStatement();
+			String queryA = buildQueryGetAuctionWithItem(item);
+			ResultSet rsE = st.executeQuery(queryA);
+			return rsE;
+
+		} catch (Exception e) {
+			System.out.println("buildQueryGetAuctionWithItem, the error is: ");
+			System.out.println(e);
+		}
+		return null;
+	}
+
+	public static String buildQueryGetAuctionWithItem(Item item) {
+		String query = String.format("SELECT * FROM auction WHERE ItemID = %s ;", item.getItemID());
+		return query;
 	}
 
 	public List getItemsByType(String itemType) {
-		
+		System.out.println("GET ITEMS BY TYPE METHOD");
 		/*
-		 * The students code to fetch data from the database will be written here
-		 * The itemType, which is the item's type on which the query has to be implemented, is given as method parameter
-		 * Query to fetch items containing itemType as their type has to be implemented
-		 * Each item's corresponding auction data also has to be fetched
-		 * Each item record is required to be encapsulated as a "Item" class object and added to the "items" List
-		 * Each auction record is required to be encapsulated as a "Auction" class object and added to the "auctions" List
-		 * The items and auctions Lists are to be added to the "output" List and returned
+		 * The students code to fetch data from the database will be written here The
+		 * itemType, which is the item's type on which the query has to be implemented,
+		 * is given as method parameter Query to fetch items containing itemType as
+		 * their type has to be implemented Each item's corresponding auction data also
+		 * has to be fetched Each item record is required to be encapsulated as a "Item"
+		 * class object and added to the "items" List Each auction record is required to
+		 * be encapsulated as a "Auction" class object and added to the "auctions" List
+		 * The items and auctions Lists are to be added to the "output" List and
+		 * returned
 		 */
 
 		List output = new ArrayList();
 		List<Item> items = new ArrayList<Item>();
 		List<Auction> auctions = new ArrayList<Auction>();
-				
-		/*Sample data begins*/
-		for (int i = 0; i < 4; i++) {
-			Item item = new Item();
-			item.setItemID(123);
-			item.setDescription("sample description");
-			item.setType("BOOK");
-			item.setName("Sample Book");
-			items.add(item);
-			
-			Auction auction = new Auction();
-			auction.setMinimumBid(100);
-			auction.setBidIncrement(10);
-			auctions.add(auction);
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+			String user = "root";
+			String pass = "Alanyi44";
+			Connection connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/paj_auction_house", user,
+					pass);
+			System.out.print("connected!");
+			Statement st = connect.createStatement();
+			String employeeQuery = buildQueryGetItemsByType(itemType);
+			ResultSet rsE = st.executeQuery(employeeQuery);
+			return getItemOutput(items, auctions, rsE, connect, output);
+
+		} catch (Exception e) {
+			System.out.println("getItemsByType error is: ");
+			System.out.println(e);
 		}
-		/*Sample data ends*/
-		
-		output.add(items);
-		output.add(auctions);
-		
-		return output;
+
+		return null;
+
 	}
 
-	public List<Item> getBestsellersForCustomer(String customerID) {
+	public static String buildQueryGetItemsByType(String type) {
+		System.out.println("IbuildQueryGetItemsByType");
+//		String query = String.format("SELECT * FROM item WHERE Name LIKE '%" + name + "%' ");
+		String temp = "SELECT * FROM item WHERE Type LIKE \'%" + type + "%\' ";
+		System.out.println("The query iS : " + temp);
+		return temp;
+
+	}
+
+	public static ResultSet runQueryAuctionWithItemType(Item item) {
+		System.out.println("Run Query Action with Item ID");
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+			String user = "root";
+			String pass = "Alanyi44";
+			Connection connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/paj_auction_house", user,
+					pass);
+			System.out.print("connected!");
+			Statement st = connect.createStatement();
+			String queryA = buildQueryGetAuctionWithItem(item);
+			ResultSet rsE = st.executeQuery(queryA);
+			return rsE;
+
+		} catch (Exception e) {
+			System.out.println("buildQueryGetAuctionWithItem, the error is: ");
+			System.out.println(e);
+		}
+		return null;
+	}
+
+	public List<Item> getBestsellersForCustomer(String customerID) { // TODO
 
 		/*
-		 * The students code to fetch data from the database will be written here.
-		 * Each record is required to be encapsulated as a "Item" class object and added to the "items" ArrayList.
-		 * Query to get the Best-seller list of items for a particular customer, indicated by the customerID, has to be implemented
-		 * The customerID, which is the customer's ID for whom the Best-seller items have to be fetched, is given as method parameter
+		 * The students code to fetch data from the database will be written here. Each
+		 * record is required to be encapsulated as a "Item" class object and added to
+		 * the "items" ArrayList. Query to get the Best-seller list of items for a
+		 * particular customer, indicated by the customerID, has to be implemented The
+		 * customerID, which is the customer's ID for whom the Best-seller items have to
+		 * be fetched, is given as method parameter
 		 */
 
 		List<Item> items = new ArrayList<Item>();
-				
-		/*Sample data begins*/
+
+		/* Sample data begins */
 		for (int i = 0; i < 6; i++) {
 			Item item = new Item();
 			item.setItemID(123);
@@ -286,8 +563,8 @@ public class ItemDao {
 			item.setNumCopies(50);
 			items.add(item);
 		}
-		/*Sample data ends*/
-		
+		/* Sample data ends */
+
 		return items;
 
 	}

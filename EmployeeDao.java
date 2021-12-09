@@ -281,7 +281,7 @@ public class EmployeeDao {
 		return employee;
 	}
 	
-	public Employee getHighestRevenueEmployee() {
+	public Employee getHighestRevenueEmployee() { //TODO
 		
 		/*
 		 * The students code to fetch employee data who generated the highest revenue will be written here
@@ -313,7 +313,7 @@ public class EmployeeDao {
 			System.out.println(e);
 		}
 		
-		return employee;
+		return null;
 	}
 	
 	public static String highestRevenueEmployeeQuery() {
