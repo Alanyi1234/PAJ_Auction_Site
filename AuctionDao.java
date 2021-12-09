@@ -104,6 +104,7 @@ public class AuctionDao {
 	}
 
 	public String recordSale(String auctionID) {
+		System.out.println("RECORD SALE METHOD");
 		/*
 		 * The students code to update data in the database will be written here
 		 * Query to record a sale, indicated by the auction ID, should be implemented

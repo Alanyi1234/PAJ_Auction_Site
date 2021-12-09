@@ -290,12 +290,12 @@ public class EmployeeDao {
 		
 		Employee employee = new Employee();
 		
-		/*Sample data begins*/
-		employee.setEmail("shiyong@cs.sunysb.edu");
-		employee.setFirstName("Shiyong");
-		employee.setLastName("Lu");
-		employee.setEmployeeID("631-413-5555");
-		/*Sample data ends*/
+//		/*Sample data begins*/
+//		employee.setEmail("shiyong@cs.sunysb.edu");
+//		employee.setFirstName("Shiyong");
+//		employee.setLastName("Lu");
+//		employee.setEmployeeID("631-413-5555");
+//		/*Sample data ends*/
 		
 		try {
 			Class.forName("com.mysql.jdbc.Driver");
@@ -304,9 +304,33 @@ public class EmployeeDao {
 			Connection connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/paj_auction_house",user, pass);
 			System.out.print("connected!");
 			Statement st = connect.createStatement();
-			String employeeQuery = highestRevenueEmployeeQuery();
-//			ResultSet rsE = st.executeQuery(employeeQuery);
-//			storeEmployees(employees,rsE,connect);
+			
+			st.executeUpdate("CREATE VIEW Sold(AuctionId, SoldPrice)\r\n"
+			+ "AS SELECT B1.AuctionID, B1.BidPrice AS SoldPrice\r\n"
+			+ "FROM Bid B1\r\n"
+			+ "WHERE B1.BidPrice >= ALL(SELECT B2.BidPrice FROM Bid B2 WHERE B1.AuctionId = B2.AuctionId)");
+			
+			st.executeUpdate("CREATE VIEW CustomerRepRevenue(EmployeeId, Revenue)\r\n"
+			+ "AS\r\n"
+			+ "SELECT A.Monitor, SUM(S.SoldPrice)\r\n"
+			+ "FROM Sold S, Auction A\r\n"
+			+ "WHERE S.AuctionId = A.AuctionId\r\n"
+			+ "GROUP BY A.Monitor");
+			
+			ResultSet rs = st.executeQuery("SELECT CRR.EmployeeId FROM CustomerRepRevenue CRR WHERE CRR.Revenue >= ALL(SELECT CRR1.Revenue FROM CustomerRepRevenue CRR1)");
+			
+			rs.next();
+			String employeeID = rs.getString("EmployeeID");
+			rs = st.executeQuery("SELECT * FROM Person WHERE PersonID = '" + employeeID + "'");
+	        rs.next();
+	        
+	        employee.setEmail(rs.getString("Email"));
+			employee.setFirstName(rs.getString("FirstName"));
+			employee.setLastName(rs.getString("LastName"));
+			employee.setEmployeeID(employeeID);
+			st.executeUpdate("DROP VIEW IF EXISTS Sold");
+            st.executeUpdate("DROP VIEW IF EXISTS CustomerRevenue");
+            return employee;
 		}
 		catch(Exception e) {
 			System.out.println("the error is: ");

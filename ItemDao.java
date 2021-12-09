@@ -153,19 +153,6 @@ public class ItemDao {
 		 * each "item" object
 		 */
 
-//		List<Item> items = new ArrayList<Item>();
-//
-//		/* Sample data begins */
-//		for (int i = 0; i < 6; i++) {
-//			Item item = new Item();
-//			item.setItemID(123);
-//			item.setDescription("sample description");
-//			item.setType("BOOK");
-//			item.setName("Sample Book");
-//			item.setSoldPrice(150);
-//			items.add(item);
-//		}
-		/* Sample data ends */
 		List<Item> items = new ArrayList<Item>();
 
 		try {
@@ -235,7 +222,7 @@ public class ItemDao {
 	}
 
 	public List<Item> getItemSuggestions(String customerID) { // TODO
-
+		System.out.println("GET ITEM SUGGESTION METHOD");
 		/*
 		 * The students code to fetch data from the database will be written here Query
 		 * to fetch item suggestions for a customer, indicated by customerID, must be
@@ -247,23 +234,60 @@ public class ItemDao {
 
 		List<Item> items = new ArrayList<Item>();
 
-		/* Sample data begins */
-		for (int i = 0; i < 4; i++) {
-			Item item = new Item();
-			item.setItemID(123);
-			item.setDescription("sample description");
-			item.setType("BOOK");
-			item.setName("Sample Book");
-			item.setNumCopies(2);
-			items.add(item);
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+			String user = "root";
+			String pass = "Alanyi44";
+			Connection connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/paj_auction_house", user,
+					pass);
+			System.out.print("connected!");
+			Statement st = connect.createStatement();
+			
+			String boughtTable = createBoughtTable();
+			st.executeUpdate(boughtTable);
+			
+			String searchCustomer = getItemIdFromBoughtTablewithCustomerID(customerID);
+			ResultSet itemIDs = st.executeQuery(searchCustomer);
+			storeItemFromID(items, itemIDs, connect);
+			String drop = deleteBoughtView();
+			st.executeUpdate(drop);
+			return items;
+
+		} catch (Exception e) {
+			System.out.println("unable to connect, the error is: ");
+			System.out.println(e);
 		}
-		/* Sample data ends */
+		
+		return null;
 
-		return items;
-
+	}
+	public static String createBoughtTable() {
+		String query = "CREATE VIEW Bought(CustomerID, ItemID, ItemType)\r\n"
+		+ "AS\r\n"
+		+ "SELECT B1.CustomerID, I.ItemID, I.Type AS ItemType\r\n"
+		+ "FROM Bid B1, Item I, Auction A\r\n"
+		+ "WHERE B1.AuctionID = A.AuctionID AND A.ItemID = I.ItemID AND\r\n"
+		+ "B1.BidPrice >= ALL (SELECT B2.BidPrice FROM Bid B2 WHERE B1.AuctionID = B2.AuctionID);";
+		System.out.println(query);
+		return query;
+	}
+	
+	public static String getItemIdFromBoughtTablewithCustomerID(String customerID) {
+		String query = String.format("SELECT I.ItemID, I.Name, I.Description\r\n"
+		+ "FROM Item I\r\n"
+		+ "WHERE I.ItemID NOT IN (Select B.ItemID FROM Bought B WHERE B.CustomerID = '%s');", customerID);
+	
+		System.out.println(query);
+		return query;
+	}
+	
+	public static String deleteBoughtView() {
+		String query ="DROP VIEW bought";
+		return query;
 	}
 
 	public List getItemsBySeller(String sellerID) { // TODO
+		System.out.println("getItemsBySeller METHOD");
 
 		/*
 		 * The students code to fetch data from the database will be written here Query
@@ -285,35 +309,80 @@ public class ItemDao {
 		List<Bid> bids = new ArrayList<Bid>();
 		List<Auction> auctions = new ArrayList<Auction>();
 
-		/* Sample data begins */
-		for (int i = 0; i < 4; i++) {
-			Item item = new Item();
-			item.setItemID(123);
-			item.setDescription("sample description");
-			item.setType("BOOK");
-			item.setName("Sample Book");
-			items.add(item);
+		try {
+			Class.forName("com.mysql.jdbc.Driver");
+			String user = "root";
+			String pass = "Alanyi44";
+			Connection connect = DriverManager.getConnection("jdbc:mysql://localhost:3306/paj_auction_house", user,
+					pass);
+			System.out.print("connected!");
+			Statement st = connect.createStatement();
+			String salesQuery = buildQueryGetSeller(sellerID);
+			ResultSet salesE = st.executeQuery(salesQuery);
+			//use salesE gives list of sales, now access auction and item
+			storeItemBySeller(output,items,bids,auctions, salesE, connect);
+			return output;
 
-			Bid bid = new Bid();
-			bid.setCustomerID("123-12-1234");
-			bid.setBidPrice(120);
-			bids.add(bid);
-
-			Auction auction = new Auction();
-			auction.setMinimumBid(100);
-			auction.setBidIncrement(10);
-			auction.setAuctionID(123);
-			auctions.add(auction);
+		} catch (Exception e) {
+			System.out.println("getItemsBySeller, the error is: ");
+			System.out.println(e);
 		}
-		/* Sample data ends */
-
-		output.add(items);
-		output.add(bids);
-		output.add(auctions);
 
 		return output;
 	}
+	
+	public static String buildQueryGetSeller(String sellerID) {
+		System.out.println("buildQueryGetSeller");
+		String query = String.format("Select * from sales Where SellerID = %s", sellerID);
+		System.out.println(query);
+		return query;
+	}
 
+	public static List storeItemBySeller(List output, List<Item> items, List<Bid> bids, List<Auction> auctions, ResultSet salesE, Connection connect ) {
+		System.out.println("storeItemBySeller");
+		try {
+			while (salesE.next()) {
+				Statement st = connect.createStatement();
+				String getAuction= String.format("SELECT * FROM auction WHERE AuctionID = %s ", salesE.getString("AuctionID"));
+				ResultSet rsA = st.executeQuery(getAuction);
+				rsA.next();
+				Auction auction = new Auction();
+				auction.setMinimumBid(Float.parseFloat(rsA.getString("MinimumBid")));
+				auction.setBidIncrement(Float.parseFloat(rsA.getString("BidIncrement")));
+				auction.setAuctionID(Integer.parseInt(salesE.getString("AuctionID")));
+				auctions.add(auction);
+				
+				String getItem= String.format("SELECT * FROM item WHERE ItemID = %s ", rsA.getString("ItemID"));
+				ResultSet rsI = st.executeQuery(getItem);
+				rsI.next();
+				
+				Item item = new Item();
+				item.setItemID(Integer.parseInt(rsI.getString("ItemID")));
+				item.setDescription(rsI.getString("Description"));
+				item.setType(rsI.getString("Type"));
+				item.setName(rsI.getString("Name"));
+				item.setNumCopies(Integer.parseInt(rsI.getString("NumCopies")));
+				items.add(item);
+				
+				String getBid= String.format("SELECT * FROM bid WHERE AuctionID = %s ", salesE.getString("AuctionID"));
+				ResultSet rsB = st.executeQuery(getBid);
+				rsB.next();
+				Bid bid = new Bid();
+				bid.setCustomerID(rsB.getString("CustomerID"));
+				bid.setBidPrice(Float.parseFloat(rsB.getString("BidPrice")));
+				bids.add(bid);
+				
+			}
+			output.add(items);
+			output.add(bids);
+			output.add(auctions);
+			return output;
+			
+		} catch (Exception e) {
+			System.out.println("storeItemBySeller method" + e);
+		}
+		return null;
+	}
 	public List<Item> getItemTypes() {
 		System.out.println("Get item types method");
 		/*
@@ -339,7 +408,7 @@ public class ItemDao {
 //			return getItemTypes(items,rsE,connect);
 
 		} catch (Exception e) {
-			System.out.println("unable to connect, the error is: ");
+			System.out.println("getItemTypes, the error is: ");
 			System.out.println(e);
 		}
 
