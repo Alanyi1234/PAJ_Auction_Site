@@ -1,0 +1,1 @@
+SELECT CRR.EmployeeId FROM CustomerRepRevenue CRR WHERE CRR.Revenue >= ALL(SELECT CRR1.Revenue FROM CustomerRepRevenue CRR1)

@@ -1,0 +1,1 @@
+SELECT I.ItemID, SUM(S.SoldPrice) FROM Sold S, Auction A, Item I WHERE I.Type LIKE '%a%' AND S.AuctionID = A.AuctionID AND I.ItemID = A.ItemID;
